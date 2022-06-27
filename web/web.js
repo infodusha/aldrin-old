@@ -2,8 +2,14 @@ import onServerActions from '../on_server_actions.json';
 import onClientActions from '../on_client_actions.json';
 
 class Actions {
-    constructor() {
-        // TODO add checks for the existence of the methods
+
+    constructor({ isEmitter }) {
+        const actions = isEmitter ? onServerActions : onClientActions;
+        for (const action of actions) {
+            if (this[action] === undefined) {
+                throw new Error(`Action ${action} is not implemented`);
+            }
+        }
     }
 
     getAction(f) {
@@ -12,6 +18,11 @@ class Actions {
 }
 
 class ExecuteActions extends Actions {
+
+    constructor() {
+        super({ isEmitter: false });
+    }
+
     reload() {
         location.reload();
     }
@@ -50,7 +61,7 @@ class ExecuteActions extends Actions {
 class EmitActions extends Actions {
 
     constructor() {
-        super();
+        super({ isEmitter: true });
         window.cl = function (self) {
             emitter.click(self.id);
         }
