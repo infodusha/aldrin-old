@@ -1,70 +1,85 @@
-const event = {
-    connected: 0,
-    click: 1,
+import onServerActions from '../on_server_actions.json';
+import onClientActions from '../on_client_actions.json';
+
+class Actions {
+    constructor() {
+        // TODO add checks for the existence of the methods
+    }
+
+    getAction(f) {
+        return onServerActions.indexOf(f.name);
+    }
 }
 
-const commands = {
-    reload: 0,
-    createElement: 1,
-    removeElement: 2,
-    replaceElement: 3,
+class ExecuteActions extends Actions {
+    reload() {
+        location.reload();
+    }
+
+    createElement(id, index, html) {
+        const parent = document.getElementById(id);
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        const afterEl = parent.children[index];
+        if (afterEl) {
+            for (const child of Array.from(tmp.children)) {
+                parent.insertBefore(child, afterEl);
+            }
+        } else {
+            parent.append(...tmp.children);
+        }
+    }
+
+    removeElement(id, index, n) {
+        const el = document.getElementById(id);
+        Array.from({ length: n }).map((_, i) => el.children[index + i]).forEach(e => e.remove());
+    }
+
+    replaceElement(id, index, html) {
+        const parent = document.getElementById(id);
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        let i = index;
+        for (const child of Array.from(tmp.children)) {
+            parent.replaceChild(parent.children[i], child);
+            i++;
+        }
+    }
+}
+
+class EmitActions extends Actions {
+
+    constructor() {
+        super();
+        window.cl = function (self) {
+            emitter.click(self.id);
+        }
+    }
+
+    _encode(...args) {
+        return JSON.stringify(args);
+    }
+
+    connected() {
+        const act = this._encode(this.getAction(this.connected));
+        socket.send(act);
+    }
+
+    click(id) {
+        const act = this._encode(this.getAction(this.click), id);
+        socket.send(act);
+    }
 }
 
 const socket = new WebSocket('ws://localhost:4200/ws');
+const emitter = new EmitActions();
+const executor = new ExecuteActions();
 
-socket.addEventListener('open',  (event) => {
-    send(event.connected);
+socket.addEventListener('open',  () => {
+    emitter.connected();
 });
 
 socket.addEventListener('message',  (event) => {
-    const command = JSON.parse(event.data);
-    switch (command.e) {
-        case commands.reload:
-            return reload();
-        case commands.createElement:
-            return createElement(command.id, command.i, command.c);
-        case commands.removeElement:
-            return removeElement(command.id, command.i, command.l);
-        case commands.replaceElement:
-            return replaceElement(command.id, command.i, command.c);
-    }
+    const [e, ...data] = JSON.parse(event.data);
+    executor[onClientActions[e]](...data);
 });
-
-function send(e, extra = {}) {
-    socket.send(JSON.stringify({ e, ...extra }));
-}
-
-function cl() {
-    send(event.click, { id: this.id });
-}
-
-function reload() {
-    console.log('Reloading...')
-    location.reload();
-}
-
-function createElement(parentId, i, html) {
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    const parent = document.getElementById(parentId);
-    const afterEl = parent.children[i];
-    if (afterEl) {
-        for (const child of Array.from(tmp.children)) {
-            parent.insertBefore(child, afterEl);
-        }
-    } else {
-        parent.append(...tmp.children);
-    }
-}
-
-function removeElement(parentId, i, l) {
-    const el = document.getElementById(parentId);
-    Array.from({ length: l }, (_, x) => i + x).map(i => el.children[i]).forEach(e => e.remove());
-}
-
-// TODO: replaceElement
-function replaceElement(targetId, html) {
-    const el = document.getElementById(targetId);
-    const index = Array.from(el.parentElement.children).findIndex(e => e === el);
-    document.getElementById(targetId).innerHTML += html;
-}

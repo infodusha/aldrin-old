@@ -1,55 +1,59 @@
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:aldrin/app.dart';
+import 'package:aldrin/connection_registry.dart';
+import 'package:aldrin/definitions.dart';
+import 'package:aldrin/router.dart';
+import 'package:nanoid/nanoid.dart';
 
-WebSocket? globalWebSocket;
+import 'context.dart';
 
-Future<HttpServer> startServer(int port) async {
-  final server = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
+const String idCookieName = 'id';
 
-  server.listen((request) {
-    if (request.uri.path == '/ws') {
-      attachWebSocket(request);
-    } else if (request.uri.path == '/web.js') {
-      request.response.headers.add('Content-Type', 'text/javascript');
-      File file = File('./web/web.js');
-      request.response.write(file.readAsStringSync());
-      request.response.close();
-    } else {
-      request.response.headers.add('Content-Type', 'text/html');
-      request.response.write(bootstrap(appComponent));
-      request.response.close();
-    }
-  });
+ConnectionRegistry _connectionRegistry = ConnectionRegistry();
 
+Future<HttpServer> startServer(InternetAddress address, int port) async {
+  final server = await HttpServer.bind(address, port);
+  server.listen(_onRequest);
   return server;
 }
 
-JsonDecoder decoder = JsonDecoder();
-final listeners = {};
-
-Future<void> attachWebSocket(HttpRequest request) async {
-  final websocket = await WebSocketTransformer.upgrade(request);
-
-  websocket.listen((data) {
-    final k = decoder.convert(data);
-    final key = '${k['id']}:${k['e']}';
-    if (listeners[key] != null) {
-      listeners[key]();
-    }
-    print('WS: $data');
-  });
-
-  globalWebSocket = websocket;
-}
-
-void sendToUser(String message) {
-  if (globalWebSocket != null) {
-    globalWebSocket!.add(message);
+void _onRequest(HttpRequest request) {
+  if (request.uri.path == '/ws') {
+    _attachWebSocket(request);
+  } else if (request.uri.path == '/web.js') {
+    request.response.headers.add('Content-Type', 'text/javascript');
+    File file = File('./web/out.js');
+    request.response.write(file.readAsStringSync());
+    request.response.close();
+  } else if (request.uri.path == '/') {
+    Cookie idCookie = _createIdCookie();
+    request.response.cookies.add(idCookie);
+    request.response.headers.add('Content-Type', 'text/html');
+    request.response.write(getRootRoute());
+    request.response.close();
+    runInContext(createContext(idCookie.value), _runInContext);
+  } else {
+    request.response.close();
   }
 }
 
-void listenUser(String id, int e, Function listener) {
-  listeners['$id:$e'] = listener;
+void _runInContext() {
+  OnMountDef.init();
 }
+
+Future<void> _attachWebSocket(HttpRequest request) async {
+  String id = _getId(request.cookies);
+  WebSocket ws = await WebSocketTransformer.upgrade(request);
+  _connectionRegistry.add(id, ws);
+}
+
+Cookie _createIdCookie() {
+  Cookie cookie = Cookie(idCookieName, nanoid());
+  cookie.httpOnly = true;
+  return cookie;
+}
+
+String _getId(List<Cookie> cookies) {
+  return cookies.firstWhere((c) => c.name == idCookieName).value;
+}
+

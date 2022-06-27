@@ -1,0 +1,14 @@
+{
+  "name": "aldrin",
+  "version": "0.1.0",
+  "description": "Single Page Applications running on the server side.",
+  "main": "web.js",
+  "scripts": {
+    "build": "node ./build.js"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "esbuild": "^0.14.47"
+  }
+}

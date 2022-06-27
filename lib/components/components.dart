@@ -5,7 +5,7 @@ abstract class Component {
   Component? parent;
 
   T getParent<T extends Component>() {
-    var i = parent;
+    Component? i = parent;
     while (i != null) {
       if (i is T) {
         return i;
@@ -20,13 +20,13 @@ class Fragment extends Component {
   final List<Component> children;
 
   Fragment(this.children) {
-    for (var child in children) {
+    for (Component child in children) {
       child.parent = this;
     }
   }
 
-  getChildIndex(Component child) {
-    return children.where((e) => (e is IfElement && e != child) ? e.condition.value : true).toList().indexOf(child);
+  int getChildIndex(Component child) {
+    return children.where((e) => (e is IfElement && e != child) ? e.isRendered : true).toList().indexOf(child);
   }
 
   @override
