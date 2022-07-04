@@ -4,16 +4,14 @@ import 'package:aldrin/components/elements.dart';
 import 'package:aldrin/definitions.dart';
 
 PageComponent appComponent() {
-  final countState = StateDef(0);
-  final visibleState = StateDef(false);
+  final countState = StateDef(-1);
+  final visibleState = StateDef(true);
 
-  countClick() {
-    print('countClick');
+  void countClick() {
     countState.value++;
   }
 
-  visibleClick() {
-    print('visibleClick');
+  void visibleClick() {
     visibleState.value = !visibleState.value;
   }
 
@@ -29,7 +27,7 @@ PageComponent appComponent() {
       child: TextElement('Add count'),
       onClick: countClick
     )),
-    IfElement(() => visibleState.value && countState.value > 0, Fragment([
+    IfElement(() => visibleState.value && countState.value > 0 && countState.value < 4, Fragment([
       DivNode(child: TextElement('TEST1')),
       DivNode(child: TextElement('TEST2')),
     ])),
@@ -38,12 +36,19 @@ PageComponent appComponent() {
 }
 
 Component ifComponent(StateDef<bool> visibleState) {
-  return IfElement(() => visibleState.value, DivNode(child: TextElement('Extra data 1')));
+  return IfElement(() => visibleState.value, DivNode(child: Fragment([
+    TextElement('Extra data 1 - 0'),
+    TextElement('Extra data 1 - 1')
+  ])), elseChild: TextElement('Else data 2'));
 }
 
 Component linkComponent() {
   OnMountDef(() {
     print('Link component mounted');
+  });
+
+  OnUnMountDef(() {
+    print('Link component unmounted');
   });
 
   return DivNode(child: ANode(child: TextElement('Go to Google'), href: 'https://google.com'));

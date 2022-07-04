@@ -26,7 +26,12 @@ class Fragment extends Component {
   }
 
   int getChildIndex(Component child) {
-    return children.where((e) => (e is IfElement && e != child) ? e.isRendered : true).toList().indexOf(child);
+    return children.where((e) {
+      if (e is IfElement && e != child) {
+        return e.isRendered.value;
+      }
+      return true;
+    }).toList().indexOf(child);
   }
 
   @override

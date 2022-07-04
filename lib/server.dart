@@ -18,7 +18,7 @@ Future<HttpServer> startServer(InternetAddress address, int port) async {
 }
 
 void _onRequest(HttpRequest request) {
-  if (request.uri.path == '/ws') {
+  if (request.uri.path == '/_ws') {
     _attachWebSocket(request);
   } else if (request.uri.path == '/web.js') {
     request.response.headers.add('Content-Type', 'text/javascript');

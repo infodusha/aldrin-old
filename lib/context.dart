@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'definitions.dart';
+import 'context_data.dart';
 
 final List<Context> _allContexts = [];
 
@@ -9,7 +9,7 @@ class Context {
   static bool get hasCurrent => Zone.current[#context] != null;
 
   final String id;
-  final List<StateDef> states = [];
+  final List<ContextBox<dynamic>> boxes = [];
 
   Context(this.id);
 }

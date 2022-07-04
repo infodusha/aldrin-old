@@ -6,6 +6,8 @@ import 'dart:mirrors';
 import 'package:aldrin/connection_registry.dart';
 import 'package:aldrin/context.dart';
 
+// That seems to be possible generate some switch-case code
+// And get rid of dart:mirrors
 abstract class _Actions {
   bool isEmitter;
   late List<dynamic> _methodNames;
@@ -25,7 +27,7 @@ abstract class _Actions {
     }
     return _methodNames.indexOf(methodName);
   }
-  
+
   void callAction(int index, List<dynamic> args) {
     String methodName =  _methodNames.elementAt(index);
     ClassMirror classMirror = reflect(this).type;
@@ -77,8 +79,8 @@ class EmitActions extends _Actions {
     _connectionRegistry.send(Context.current.id, act);
   }
 
-  void replaceElement(String id, int index, String html) {
-    String act = _encode([getAction('replaceElement'), id, index, _safeQuoteHtml(html)]);
+  void replaceElement(String id, String html) {
+    String act = _encode([getAction('replaceElement'), id, _safeQuoteHtml(html)]);
     _connectionRegistry.send(Context.current.id, act);
   }
 }

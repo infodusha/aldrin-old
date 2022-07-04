@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:aldrin/definitions.dart';
+
 import 'context.dart';
 
 class ConnectionRegistry {
@@ -48,7 +50,9 @@ class _Connection {
   }
 
   void _onDone() {
-    // TODO emit unmount hooks in the future
+    runInContext(getContext(id), () {
+      OnUnMountDef.run();
+    });
     _closed(this);
     removeContext(id);
   }

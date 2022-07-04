@@ -1,68 +1,47 @@
 import 'dart:async';
 
 import 'package:aldrin/context.dart';
+import 'package:rxdart/rxdart.dart';
+import 'package:tuple/tuple.dart';
+
+import 'context_data.dart';
+
 
 class StateDef<T> {
-  static final List<StateDef> lastRead = [];
+  static List<ContextState>? _reads;
 
-  final T _initialValue;
-  final Map<String, T> _values = {};
-  final StreamController<String> _controller = StreamController.broadcast();
-
-  Stream<T> get onChange {
-    Context context = Context.current;
-    return _controller.stream.where((id) => id == context.id).map((_) => value);
-  }
+  final ContextState<T> _contextState;
 
   T get value {
-    StateDef.lastRead.add(this);
-
-    if (Context.hasCurrent) {
-      Timer.run(_clearLastRead);
-    }
-
-    T? value = Context.hasCurrent ? _values[Context.current.id] : _initialValue;
-    if (value == null) {
-      return _initialValue;
-    }
-    return value;
+    _reads?.add(_contextState);
+    return _contextState.value;
   }
 
   set value(T value) {
-    Context context = Context.current;
-    T? prevValue = _values[context.id];
-    if (prevValue == value) {
-      return;
-    }
-    _values[context.id] = value;
-    _controller.add(context.id);
+    _contextState.value = value;
   }
 
-  StateDef(this._initialValue) {
-    OnMountDef(() {
-      // Context.current.states.add(this);
-      Timer.run(_clearLastRead);
-    });
-  }
+  StateDef(T initialValue): _contextState = ContextState(initialValue);
 
-  _clearLastRead() {
-    StateDef.lastRead.clear();
+  static Tuple2<R, Stream<void>> getValueAndChanger<R>(R Function() fn) {
+    StateDef._reads = [];
+    R res = fn();
+    List<ContextState> reads = StateDef._reads!;
+    StateDef._reads = null;
+    Stream<void> onChange = Rx.race(reads.map((s) => s.onChange).take(1));
+    return Tuple2(res, onChange);
   }
 }
 
 class OnMountDef {
   static final List<OnMountDef> _initial = [];
-  static bool _initialRun = false;
 
   final void Function() _callback;
 
   OnMountDef(this._callback) {
     if (!Context.hasCurrent) {
-      if (_initialRun) {
-        throw Exception('No context, but already mounted');
-      }
-      _initial.add(this);
-    } else if (!_initial.contains(this)) { // TODO not sure that check makes sense
+      _initial.add(this); // FIXME we should skip in case the cause component is not visible
+    } else {
       _callback();
     }
   }
@@ -71,6 +50,22 @@ class OnMountDef {
     for (OnMountDef def in _initial) {
       def._callback();
     }
-    _initialRun = true;
+  }
+}
+
+// TODO implement
+class OnUnMountDef {
+  static final List<OnUnMountDef> _list = [];
+
+  final void Function() _callback;
+
+  OnUnMountDef(this._callback) {
+    _list.add(this);
+  }
+
+  static run() {
+    for (OnUnMountDef def in _list) {
+      def._callback();
+    }
   }
 }

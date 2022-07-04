@@ -10,6 +10,9 @@ dependencies:
   nanoid: ^1.0.0
   args: ^2.3.1
   hotreloader: ^3.0.4
+  intl: ^0.17.0
+  tuple: ^2.0.0
+  rxdart: ^0.27.4
 
 dev_dependencies:
   lints: ^2.0.0

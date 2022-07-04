@@ -31,30 +31,24 @@ class ExecuteActions extends Actions {
         const parent = document.getElementById(id);
         const tmp = document.createElement('div');
         tmp.innerHTML = html;
-        const afterEl = parent.children[index];
+        const afterEl = parent.childNodes[index];
         if (afterEl) {
-            for (const child of Array.from(tmp.children)) {
+            for (const child of Array.from(tmp.childNodes)) {
                 parent.insertBefore(child, afterEl);
             }
         } else {
-            parent.append(...tmp.children);
+            parent.append(...tmp.childNodes);
         }
     }
 
     removeElement(id, index, n) {
-        const el = document.getElementById(id);
-        Array.from({ length: n }).map((_, i) => el.children[index + i]).forEach(e => e.remove());
+        const parent = document.getElementById(id);
+        Array.from({ length: n }).map((_, i) => parent.childNodes[index + i]).forEach(e => e.remove());
     }
 
-    replaceElement(id, index, html) {
-        const parent = document.getElementById(id);
-        const tmp = document.createElement('div');
-        tmp.innerHTML = html;
-        let i = index;
-        for (const child of Array.from(tmp.children)) {
-            parent.replaceChild(parent.children[i], child);
-            i++;
-        }
+    replaceElement(id, html) {
+        const item = document.getElementById(id);
+        item.innerHTML = html;
     }
 }
 
@@ -82,7 +76,8 @@ class EmitActions extends Actions {
     }
 }
 
-const socket = new WebSocket('ws://localhost:4200/ws');
+const protocol = location.protocol === 'https' ? 'wss' : 'ws';
+const socket = new WebSocket(`${protocol}://${location.host}/_ws`);
 const emitter = new EmitActions();
 const executor = new ExecuteActions();
 
