@@ -5,7 +5,7 @@
 # Files and directories created by pub.
 .dart_tool/
 .packages
-.dart
+.dart/
 
 # Web files
 web/node_modules/

@@ -7,23 +7,24 @@ import 'package:nanoid/nanoid.dart';
 
 import 'context.dart';
 
+final File webScriptFile = File('./web/out.js');
 const String idCookieName = 'id';
 
 ConnectionRegistry _connectionRegistry = ConnectionRegistry();
 
 Future<HttpServer> startServer(InternetAddress address, int port) async {
-  final server = await HttpServer.bind(address, port);
-  server.listen(_onRequest);
+  final String webScript = await webScriptFile.readAsString();
+  final HttpServer server = await HttpServer.bind(address, port);
+  server.listen((HttpRequest request) => _onRequest(request, webScript));
   return server;
 }
 
-void _onRequest(HttpRequest request) {
+void _onRequest(HttpRequest request, String webScript) {
   if (request.uri.path == '/_ws') {
     _attachWebSocket(request);
   } else if (request.uri.path == '/web.js') {
     request.response.headers.add('Content-Type', 'text/javascript');
-    File file = File('./web/out.js');
-    request.response.write(file.readAsStringSync());
+    request.response.write(webScript);
     request.response.close();
   } else if (request.uri.path == '/') {
     Cookie idCookie = _createIdCookie();
@@ -31,7 +32,7 @@ void _onRequest(HttpRequest request) {
     request.response.headers.add('Content-Type', 'text/html');
     request.response.write(getRootRoute());
     request.response.close();
-    runInContext(createContext(idCookie.value), _runInContext);
+    Context(idCookie.value).run(_runInContext);
   } else {
     request.response.close();
   }

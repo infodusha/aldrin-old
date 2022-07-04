@@ -44,17 +44,17 @@ class _Connection {
   final StreamController<String> _eventsController;
 
   void _onData(dynamic data) {
-    runInContext(getContext(id), () {
+    Context.getById(id).run(() {
       _eventsController.add(data);
     });
   }
 
   void _onDone() {
-    runInContext(getContext(id), () {
+    Context.getById(id).run(() {
       OnUnMountDef.run();
     });
     _closed(this);
-    removeContext(id);
+    Context.removeById(id);
   }
 
   _Connection(this.id, this._ws, this._closed, this._eventsController) {
